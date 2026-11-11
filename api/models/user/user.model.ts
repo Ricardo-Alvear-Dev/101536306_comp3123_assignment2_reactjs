@@ -1,0 +1,26 @@
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema(
+  {
+    email: {
+      unique: true,
+      type: String,
+      required: true,
+      trim: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please fill a valid email address",
+      ],
+    },
+    hashedPassword: {
+      type: String,
+      minLength: [5, "Please create a password longer than the length of 5"],
+      required: true,
+      trim: true,
+    },
+  },
+  { timestamps: true },
+);
+
+const userModel = mongoose.model("userSchema", userSchema);
+export default userModel;
