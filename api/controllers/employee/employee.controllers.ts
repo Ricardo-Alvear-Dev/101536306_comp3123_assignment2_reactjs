@@ -5,6 +5,7 @@ import { writeData } from "../../logging/logging.function";
 import {
   deleteEmployeesIdService,
   getAllEmployeesService,
+  getEmployeeSearchService,
   getEmployeesIdService,
   postAllEmployeesService,
   putEmployeesIdService,
@@ -140,6 +141,35 @@ export const deleteEmployeesIdController = async (
     const eid = req.query.eid as string;
     await deleteEmployeesIdService(eid);
     return res.status(StatusCodes.NO_CONTENT).json();
+  } catch (error) {
+    let errorMessage = "Internal Server Error";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    writeData(
+      `Error: ${errorMessage}. This error occurred on file: ${path.basename(currentFilePath)}`,
+    );
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: errorMessage });
+  }
+};
+
+export const getEmployeeSearchController = async (
+  req: Request,
+  res: Response,
+) => {
+  const { department, position } = req.query;
+  const departmentValue =
+    typeof department === "string" ? department : undefined;
+  const positionValue = typeof position === "string" ? position : undefined;
+
+  try {
+    const searchResults = await getEmployeeSearchService(
+      departmentValue ?? "",
+      positionValue ?? "",
+    );
+    return res.status(StatusCodes.OK).json(searchResults);
   } catch (error) {
     let errorMessage = "Internal Server Error";
     if (error instanceof Error) {

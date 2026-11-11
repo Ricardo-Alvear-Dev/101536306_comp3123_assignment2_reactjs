@@ -2,6 +2,7 @@ import express from "express";
 import {
   deleteEmployeesIdController,
   getAllEmployeeController,
+  getEmployeeSearchController,
   getEmployeesIdController,
   postAllEmployeesController,
   putEmployeesIdController,
@@ -14,6 +15,8 @@ employeeRouter
   .get(getAllEmployeeController)
   .post(postAllEmployeesController)
   .delete(deleteEmployeesIdController);
+
+employeeRouter.route("/employees/search").get(getEmployeeSearchController);
 
 employeeRouter
   .route("/employees/:eid")

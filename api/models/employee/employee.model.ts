@@ -20,6 +20,7 @@ const employeeSchema = new mongoose.Schema(
     date_of_joining: { type: Date },
     department: { type: String, required: true, trim: true },
     user: { type: ObjectId, required: true },
+    profile_picture: { type: String },
   },
   { timestamps: true },
 );

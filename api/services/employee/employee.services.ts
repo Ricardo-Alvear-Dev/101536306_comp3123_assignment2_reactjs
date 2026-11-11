@@ -1,4 +1,4 @@
-import zod from "zod";
+import zod, { z } from "zod";
 import employeeModel from "../../models/employee/employee.model";
 
 const employeeInputValidation = zod.object({
@@ -10,6 +10,11 @@ const employeeInputValidation = zod.object({
   date_of_joining: zod.coerce.date(),
   department: zod.string().trim(),
   user: zod.string().trim(),
+});
+
+const searchQueryValidation = zod.object({
+  department: z.string().trim().toLowerCase(),
+  position: z.string().trim().toLowerCase(),
 });
 
 export const getAllEmployeesService = async () => {
@@ -132,4 +137,22 @@ export const putEmployeesIdService = async ({
 export const deleteEmployeesIdService = async (eid: string) => {
   if (!eid) throw new Error("Invalid id");
   return await employeeModel.findByIdAndDelete(eid);
+};
+
+export const getEmployeeSearchService = async (
+  department: string,
+  position: string,
+) => {
+  ((department = department.toLowerCase().trim()),
+    (position = position.toLowerCase().trim()));
+  const valid = searchQueryValidation.parse({ department, position });
+
+  if (
+    !valid ||
+    !department.match(/^[a-zA-Z]+$/) ||
+    !position.match(/^[a-zA-Z]+$/)
+  )
+    throw new Error("Query parameters failed validation");
+
+  return await employeeModel.find({ department, position });
 };
