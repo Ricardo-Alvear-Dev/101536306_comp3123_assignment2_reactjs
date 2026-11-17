@@ -6,10 +6,14 @@ import helmet from "helmet";
 import mongoose from "mongoose";
 import multer from "multer";
 
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 import upload from "./middlewares/imageUpload";
+import Image from "./models/image.mode";
 import employeeRouter from "./routes/employee/employee.routes";
 import healthRouter from "./routes/health/health.routes";
 import userRouter from "./routes/user/user.routes";
+import { saveImage } from "./utils/saveImage";
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -35,23 +39,54 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/emp", employeeRouter);
 app.use("/health", healthRouter);
 
-// Image upload route
-app.post("/api/v1/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      message: "No image uploaded",
-    });
-  }
+app.use(
+  "/uploads",
+  express.static(path.resolve(process.cwd(), "uploads"), {
+    dotfiles: "deny",
+    index: false,
+    fallthrough: false,
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Content-Disposition", "inline");
+    },
+  }),
+);
 
-  return res.status(200).json({
-    message: "Image received successfully",
-    originalName: req.file.originalname,
-    size: req.file.size,
-    mimetype: req.file.mimetype,
-  });
+app.post("/api/v1/upload", upload.single("image"), async (req, res, next) => {
+  let savedFilename: string | undefined;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: "No image uploaded",
+      });
+    }
+
+    const image = await saveImage(req.file);
+    savedFilename = image.filename;
+
+    const savedImage = await Image.create({
+      filename: image.filename,
+      imageUrl: image.imageUrl,
+    });
+
+    return res.status(201).json({
+      message: "Image uploaded successfully",
+      image: savedImage,
+    });
+  } catch (error) {
+    if (savedFilename) {
+      try {
+        await unlink(path.resolve(process.cwd(), "uploads", savedFilename));
+      } catch (cleanupError) {
+        console.error("Failed to clean up image:", cleanupError);
+      }
+    }
+
+    next(error);
+  }
 });
 
-// Upload error handling
 app.use(
   (
     err: Error,
